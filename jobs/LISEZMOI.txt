@@ -1,0 +1,3 @@
+Le JAR tp3.jar doit etre compile a partir du projet tp3 avec Hadoop 3.4.3.
+Il n'est pas fourni : l'acces aux dependances a echoue dans cet environnement.
+Voir LISEZMOI.md pour les commandes Maven/Docker et scripts/compiler.sh pour WSL.

@@ -1,0 +1,24 @@
+services:
+  namenode:
+    image: apache/hadoop:3.4.3
+    hostname: namenode
+    command: ["hdfs", "namenode"]
+    ports: ["9870:9870"]
+    env_file: ./config
+    environment:
+      ENSURE_NAMENODE_DIR: /tmp/hadoop/dfs/name
+    volumes: ["./jobs:/opt/jobs", "./donnees:/opt/donnees", "./scripts:/opt/scripts", "./resultats:/opt/resultats"]
+  datanode:
+    image: apache/hadoop:3.4.3
+    command: ["hdfs", "datanode"]
+    env_file: ./config
+  resourcemanager:
+    image: apache/hadoop:3.4.3
+    hostname: resourcemanager
+    command: ["yarn", "resourcemanager"]
+    ports: ["8088:8088"]
+    env_file: ./config
+  nodemanager:
+    image: apache/hadoop:3.4.3
+    command: ["yarn", "nodemanager"]
+    env_file: ./config

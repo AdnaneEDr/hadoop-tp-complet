@@ -1,0 +1,200 @@
+<!doctype html><html lang="fr"><meta charset="utf-8"><title>Compte rendu Hadoop</title><style>body{margin:40px auto;max-width:1100px;padding:0 30px;font:17px/1.6 Arial;color:#233248;background:#f4f7fb}h1{color:#12324b;font-size:36px}h2{color:#12324b;margin-top:45px}h3{color:#087f8c}table{border-collapse:collapse;width:100%;background:white}th,td{text-align:left;border-bottom:1px solid #d3e0e8;padding:10px 16px}th{background:#dcecf2}pre{padding:18px;background:#e6edf4;border-radius:7px;overflow:auto;font-size:14px}p{margin:12px 0} .tag{background:#fff0ce;padding:12px 18px;border-left:5px solid #d69216} .stats{display:flex;gap:18px;margin:26px 0}.stat{background:white;flex:1;padding:18px;border-top:4px solid #087f8c}.stat b{display:block;font-size:32px;color:#12324b}.subtitle{color:#617487}.nav a{margin-right:20px;color:#087f8c}</style><body><h1>Hadoop - Travaux pratiques TP 0 à TP 3</h1>
+<p>Compte rendu, solutions et dossier reproductible - 20 octobre 2026</p>
+<h2>État de réalisation et preuves</h2>
+<p>Les 28 exercices numérotés sont traités ci-dessous. Les programmes Java, la configuration Docker, une variante WSL, les scripts de lancement, les données et les résultats locaux sont joints.</p>
+<p><b>Limite d&#x27;exécution : le cluster Hadoop n&#x27;a pas pu être démarré dans cet environnement.</b> Le client Docker est installé, mais son moteur Linux ne répond pas. Les tentatives de récupération de Hadoop ont été interrompues par des erreurs réseau. Les résultats numériques WordCount et amis communs ont été recalculés réellement avec le programme Python indépendant fourni. Ils ne constituent pas une exécution MapReduce distribuée. Les commandes HDFS/YARN ci-dessous sont des procédures à exécuter ; les valeurs annoncées pour ces services sont des réponses théoriques ou les références du sujet, pas des observations inventées.</p>
+<p>Les captures du dossier <font name="Consolas">captures</font> montrent les pages de vérification locale affichées dans un navigateur. Elles sont explicitement légendées. Aucune capture de NameNode, ResourceManager, application YARN ou terminal Hadoop réussi n&#x27;est fabriquée. Le JAR compilé et les captures du cluster restent à produire sur une installation fonctionnelle.</p>
+<p>Le sujet est joint comme référence pédagogique. Les procédures qui y figurent définissent les exercices ; elles ne constituent pas une autorisation de modifier d&#x27;autres fichiers ou services de l&#x27;utilisateur.</p>
+<h2>Choix du jeu de données</h2>
+<p>Le dossier <font name="Consolas">donnees/livres</font> contient <b>six</b> fichiers, malgré certaines mentions de « cinq livres » dans le fichier LISEZMOI. Le corpus principal comprend uniquement Alice, Hamlet, Moby Dick, Emma et Father Brown. La Bible est réservée à l&#x27;exercice de découpage en blocs. Le script charge explicitement les cinq fichiers, sans joker <font name="Consolas">*.txt</font>.</p>
+<p>Le corpus principal représente <b>2 843 966 octets et 55 654 lignes</b>. Le dossier <font name="Consolas">gutenberg</font> contient bien 18 livres. L&#x27;ajout de <font name="Consolas">THE END</font> est effectué après les WordCount afin de conserver le corpus de référence.</p>
+<h2>TP 0 - Installation et configuration</h2>
+<h3>Architecture et mise en route</h3>
+<p>Le NameNode conserve l&#x27;espace de noms et les métadonnées des blocs ; les DataNodes conservent les données. Le ResourceManager distribue les ressources ; les NodeManagers lancent les containers. Un ApplicationMaster est créé pour chaque application YARN.</p>
+<p>L&#x27;option Docker du sujet est fournie dans <font name="Consolas">docker-compose.yml</font> et <font name="Consolas">config</font>. Elle comprend un NameNode, deux DataNodes, un ResourceManager et deux NodeManagers. Pour démarrer :</p>
+<pre>docker compose up -d --scale datanode=2 --scale nodemanager=2
+docker compose ps
+docker compose exec namenode bash</pre>
+<p>Les interfaces sont <font name="Consolas">http://localhost:9870</font> et <font name="Consolas">http://localhost:8088</font>. La variante WSL utilise volontairement 19870 et 18088 pour isoler les ports du TP. Ses deux DataNodes et ses deux NodeManagers sont des processus distincts sur la même machine : cela permet une démonstration pédagogique, sans tolérance à une panne physique de l&#x27;hôte.</p>
+<h3>Exercice 0.1 - Versions</h3>
+<pre>java -version
+hadoop version</pre>
+<p>La branche Hadoop 3.4 accepte Java 8 ou Java 11 à l&#x27;exécution ; ce TP vise Java 11. Les sources Java ciblent le bytecode Java 8 avec <font name="Consolas">--release 8</font>. Java 11 a été constaté sur la machine ; la présence de Hadoop 3.4.3 n&#x27;a pas été validée.</p>
+<h3>Exercice 0.2 - Les démons</h3>
+<pre>jps
+docker compose ps</pre>
+<p>NameNode : HDFS, maître. DataNode : HDFS, esclave. ResourceManager : YARN, maître. NodeManager : YARN, esclave. <font name="Consolas">Jps</font> est l&#x27;outil d&#x27;observation, pas un démon du cluster. En Docker chaque conteneur peut avoir son propre espace de processus : <font name="Consolas">docker compose ps</font> donne la vue d&#x27;ensemble.</p>
+<h3>Exercice 0.3 - Lire la configuration</h3>
+<pre>hdfs getconf -confKey dfs.replication
+hdfs getconf -confKey fs.defaultFS</pre>
+<p>Dans l&#x27;option Windows du sujet : réplication 1 et <font name="Consolas">hdfs://localhost:9000</font>. Dans son option Docker : réplication 2 et <font name="Consolas">hdfs://namenode:8020</font>. La réplication est le nombre demandé de copies de chaque bloc. L&#x27;URI désigne le système de fichiers par défaut et l&#x27;adresse RPC du NameNode. Dans la variante WSL jointe, l&#x27;URI est <font name="Consolas">hdfs://localhost:19000</font>.</p>
+<h3>Exercice 0.4 - Le job pi</h3>
+<pre>EX=$HADOOP_HOME/share/hadoop/mapreduce/hadoop-mapreduce-examples-3.4.3.jar
+hadoop jar &quot;$EX&quot; pi 4 1000
+hadoop jar &quot;$EX&quot; pi 4 100000</pre>
+<p>Chaque lancement comporte 4 tâches Map et 1 tâche Reduce, plus l&#x27;ApplicationMaster : au moins 6 allocations de containers sans nouvelle tentative ni spéculation. Ces allocations ne sont pas nécessairement simultanées. Le nombre de points passe de 4 000 à 400 000. Le calcul utilise des suites de Halton, déterministes ; davantage de points améliore généralement l&#x27;estimation, sans garantir une diminution monotone de l&#x27;erreur à chaque taille d&#x27;échantillon. Aucune valeur de pi n&#x27;a été mesurée ici sur YARN.</p>
+<h3>Exercice 0.5 - Persistance Docker</h3>
+<pre>hdfs dfs -mkdir -p /user/etudiant
+printf &#x27;test persistance\n&#x27; &gt; /tmp/persistance.txt
+hdfs dfs -put /tmp/persistance.txt /user/etudiant/
+# Depuis le PC : docker compose stop ; docker compose start
+hdfs dfs -cat /user/etudiant/persistance.txt</pre>
+<p><font name="Consolas">stop/start</font> conserve les conteneurs et leurs couches inscriptibles : le fichier reste présent. Avec le Compose du sujet, <font name="Consolas">down/up</font> supprime puis recrée les conteneurs : les données HDFS sont perdues, car les dossiers internes NameNode/DataNode n&#x27;ont pas de volumes persistants. Les montages <font name="Consolas">jobs</font> et <font name="Consolas">donnees</font> contiennent les fichiers locaux, pas les blocs HDFS. L&#x27;archive fournie n&#x27;exécute aucun <font name="Consolas">down</font> automatique.</p>
+<h2>TP 1 - HDFS</h2>
+<h3>Exercice 1.1 - Arborescence</h3>
+<pre>hdfs dfs -mkdir -p /user/etudiant/tp1/tmp/a/b
+hdfs dfs -ls -R /user/etudiant/tp1</pre>
+<p>L&#x27;option <font name="Consolas">-p</font> crée tous les parents manquants. <font name="Consolas">-R</font> affiche récursivement les répertoires et fichiers.</p>
+<h3>Exercice 1.2 - Espace occupé</h3>
+<pre>hdfs dfs -du -s -h /user/etudiant/tp1/livres</pre>
+<p>Taille logique calculée sur les données : <b>2 843 966 octets</b>, environ 2,7 Mio. À réplication effective 2 : <b>5 687 932 octets</b>, environ 5,4 Mio de charge utile répliquée. À réplication 1 : 2 843 966 octets. La deuxième colonne de <font name="Consolas">du</font> exprime l&#x27;espace HDFS répliqué ; l&#x27;occupation physique du système hôte comprend aussi des métadonnées et des sommes de contrôle.</p>
+<h3>Exercice 1.3 - Calcul de blocs</h3>
+<p>Avec les unités binaires implicites du sujet (1 Gio = 1 024 Mio), des blocs de 128 Mio et r=3 :</p>
+<table><tr><th>Taille du fichier</th><th>Blocs</th><th>Espace de données répliquées</th></tr><tr><td>1 Gio</td><td>8</td><td>3 Gio</td></tr><tr><td>129 Mio</td><td>2 : 128 + 1 Mio</td><td>387 Mio</td></tr><tr><td>1 Kio</td><td>1 de 1 Kio</td><td>3 Kio</td></tr></table>
+<p>Formules : <font name="Consolas">nombre de blocs = plafond(T/B)</font> et <font name="Consolas">espace = T × r</font>. Le dernier bloc n&#x27;est pas rempli artificiellement.</p>
+<h3>Exercice 1.4 - Dernier bloc de la Bible</h3>
+<pre>hdfs dfs -D dfs.blocksize=1048576 -put /opt/donnees/livres/bible-kjv.txt /user/etudiant/tp1/
+hdfs fsck /user/etudiant/tp1/bible-kjv.txt -files -blocks -locations</pre>
+<p>Le fichier contient réellement <b>4 332 554 octets</b>. Le calcul donne 5 blocs : quatre de 1 048 576 octets et un dernier de <b>138 250 octets</b>. À r=2, cela représente 10 répliques de blocs, si les deux DataNodes sont disponibles. Le nombre de blocs est calculé ici ; <font name="Consolas">fsck</font> doit le confirmer sur le cluster.</p>
+<h3>Exercice 1.5 - Copier, renommer, supprimer</h3>
+<pre>hdfs dfs -cp /user/etudiant/tp1/livres/carroll-alice.txt /user/etudiant/tp1/archives/
+hdfs dfs -mv /user/etudiant/tp1/archives/carroll-alice.txt /user/etudiant/tp1/archives/alice_2026.txt
+hdfs dfs -rm -r /user/etudiant/tp1/tmp</pre>
+<p>La copie conserve l&#x27;original ; le renommage porte uniquement sur la copie. La suppression est limitée au répertoire <font name="Consolas">tmp</font> créé pour le TP.</p>
+<h3>Exercice 1.6 - Réplication</h3>
+<pre>hdfs dfs -setrep -w 1 /user/etudiant/tp1/livres/austen-emma.txt
+hdfs dfs -setrep 3 /user/etudiant/tp1/livres/austen-emma.txt
+hdfs fsck /user/etudiant/tp1/livres/austen-emma.txt -files -blocks -locations
+hdfs dfs -setrep -w 2 /user/etudiant/tp1/livres/austen-emma.txt</pre>
+<p>Avec deux DataNodes, trois copies distinctes sont impossibles. La réplication demandée devient 3, mais les blocs restent sous-répliqués avec au plus deux copies effectives. Ne pas employer <font name="Consolas">-w</font> pour la demande à 3 : l&#x27;attente ne pourrait aboutir sans troisième DataNode. Le script restaure ensuite r=2.</p>
+<h3>Exercice 1.7 - Fusion</h3>
+<pre>hdfs dfs -getmerge /user/etudiant/tp1/livres tous.txt
+wc -c tous.txt</pre>
+<p>Avant l&#x27;ajout de la ligne finale, le fichier fusionné doit contenir <b>2 843 966 octets</b>, sans séparateur ajouté par défaut. La fusion locale indépendante est fournie dans les résultats locaux.</p>
+<h3>Exercice 1.8 - Ajout en fin de fichier</h3>
+<pre>printf &#x27;THE END\n&#x27; &gt; fin.txt
+hdfs dfs -appendToFile fin.txt /user/etudiant/tp1/livres/carroll-alice.txt
+hdfs dfs -tail /user/etudiant/tp1/livres/carroll-alice.txt</pre>
+<p>L&#x27;ajout utilise 8 octets en UTF-8 avec fin de ligne Unix. Alice passe de 144 395 à 144 403 octets. La commande écrit directement dans HDFS. Les comptages de référence doivent être réalisés avant cet ajout, sinon <font name="Consolas">the</font> et <font name="Consolas">end</font> gagnent chacun une occurrence.</p>
+<h3>Exercice 1.9 - Quota</h3>
+<pre>hdfs dfs -mkdir -p /user/etudiant/tp1/quota
+hdfs dfsadmin -setQuota 3 /user/etudiant/tp1/quota
+hdfs dfs -cp /user/etudiant/tp1/livres/carroll-alice.txt /user/etudiant/tp1/quota/
+hdfs dfs -cp /user/etudiant/tp1/livres/austen-emma.txt /user/etudiant/tp1/quota/
+hdfs dfs -cp /user/etudiant/tp1/livres/shakespeare-hamlet.txt /user/etudiant/tp1/quota/
+hdfs dfs -count -q /user/etudiant/tp1/quota</pre>
+<p>Deux fichiers seulement peuvent être copiés : le répertoire quota compte lui-même pour un nom. Le troisième dépasse 3 noms et doit provoquer <font name="Consolas">NSQuotaExceededException</font>. C&#x27;est un quota de noms, distinct d&#x27;un quota d&#x27;espace.</p>
+<h3>Exercice 1.10 - Mode sécurisé</h3>
+<pre>hdfs dfsadmin -safemode enter
+hdfs dfs -mkdir /user/etudiant/tp1/interdit
+hdfs dfs -head /user/etudiant/bonjour.txt
+hdfs dfsadmin -safemode leave</pre>
+<p>En mode sécurisé, la création échoue ; la lecture reste possible si les blocs sont accessibles. Ce mode protège les métadonnées contre les modifications. Le script inclut une sortie de secours pour quitter le safe mode même si un contrôle échoue.</p>
+<h2>TP 2 - YARN</h2>
+<h3>Suivre une application et ses logs</h3>
+<pre>yarn node -list -all
+yarn node -status &lt;nodeId&gt;
+hadoop jar &quot;$EX&quot; pi 16 1000000 &gt; pi.log 2&gt;&amp;1 &amp;
+yarn application -list
+yarn application -status &lt;applicationId&gt;
+yarn applicationattempt -list &lt;applicationId&gt;
+yarn container -list &lt;attemptId&gt;
+mapred job -list
+yarn logs -applicationId &lt;applicationId&gt; &gt; pi_logs.txt
+grep -o &#x27;container_[0-9_]*&#x27; pi_logs.txt | sort -u | wc -l</pre>
+<p>Les identifiants entre chevrons doivent être remplacés par ceux de l&#x27;exécution réelle. Aucun identifiant d&#x27;application fictif n&#x27;est fourni comme preuve.</p>
+<h3>Exercice 2.1 - Ressources du cluster</h3>
+<p>Avec la configuration du TP : 2 NodeManagers × 4 096 Mio = <b>8 192 Mio</b>, et 2 × 8 = <b>16 vcores</b> déclarés à YARN. À vérifier avec <font name="Consolas">yarn node -status</font> ou l&#x27;interface Nodes. Ces valeurs sont celles de la configuration, pas nécessairement les ressources physiques disponibles de l&#x27;hôte.</p>
+<h3>Exercice 2.2 - Vagues</h3>
+<p>Des containers de 1 024 Mio permettent théoriquement 8 allocations simultanées sur le cluster. L&#x27;AM en utilise une, donc au plus 7 Map en parallèle pour un seul job. Pour 16 Map, il faut au moins 3 vagues : 7 + 7 + 2. C&#x27;est une borne idéale : files d&#x27;attente, autres applications, vcores, localisation et début du Reduce peuvent réduire le parallélisme observé.</p>
+<h3>Exercice 2.3 - États</h3>
+<p>Cycle interne nominal : <font name="Consolas">NEW → NEW_SAVING → SUBMITTED → ACCEPTED → RUNNING → FINISHED</font>. Les états transitoires ne sont pas tous visibles dans les commandes client. <font name="Consolas">State</font> décrit le cycle YARN ; <font name="Consolas">Final-State</font> est le verdict de l&#x27;application : <font name="Consolas">SUCCEEDED</font>, <font name="Consolas">FAILED</font> ou <font name="Consolas">KILLED</font>, et <font name="Consolas">UNDEFINED</font> avant son verdict. Une application peut être <font name="Consolas">FINISHED</font> tout en ayant le verdict <font name="Consolas">FAILED</font>.</p>
+<h3>Exercice 2.4 - Arrêt à 30 %</h3>
+<pre>yarn application -status &lt;applicationId&gt;
+yarn application -kill &lt;applicationId&gt;
+yarn application -status &lt;applicationId&gt;</pre>
+<p>Après propagation de l&#x27;arrêt, <font name="Consolas">State = KILLED</font> et <font name="Consolas">Final-State = KILLED</font>. Les intermédiaires Map ne constituent pas un résultat final réutilisable : ils sont locaux et nettoyés. Avec le committer standard, aucun résultat réussi n&#x27;est validé et <font name="Consolas">_SUCCESS</font> est absent. Le répertoire de sortie, des éléments temporaires ou des fichiers issus de tentatives peuvent subsister selon le moment de l&#x27;arrêt : leur absence totale n&#x27;est pas une garantie universelle. Il faut contrôler la sortie avant relance et employer un nouveau chemin.</p>
+<h3>Exercice 2.5 - Containers et logs</h3>
+<p>Pour <font name="Consolas">pi 16 1000000</font>, sans relance ni spéculation : 1 AM + 16 Map + 1 Reduce = <b>18 containers</b> sur la totalité du job. Le premier container de la tentative héberge l&#x27;ApplicationMaster. Ce total diffère du maximum de 8 containers simultanés. Le résultat effectif du décompte des logs peut être supérieur en cas de tentatives supplémentaires ou incomplet si les logs ne sont pas encore agrégés.</p>
+<h3>Exercice 2.6 - File inconnue</h3>
+<pre>hadoop jar &quot;$EX&quot; pi -D mapreduce.job.queuename=test 4 1000</pre>
+<p>Avec les seules files <font name="Consolas">default</font> et <font name="Consolas">dev</font>, la soumission à <font name="Consolas">test</font> est rejetée : file inconnue (<font name="Consolas">unknown queue</font>). L&#x27;application ne peut pas calculer normalement. Le diagnostic exact et la visibilité d&#x27;une application échouée dépendent de l&#x27;étape du rejet.</p>
+<h3>Exercice 2.7 - Container de 6 000 Mio</h3>
+<pre>hadoop jar &quot;$EX&quot; pi -D mapreduce.map.memory.mb=6000 4 1000</pre>
+<p>Chaque NodeManager n&#x27;offre que 4 096 Mio. Les ressources de deux nœuds ne s&#x27;additionnent pas pour héberger un seul container. Aucune Map de 6 000 Mio ne peut donc s&#x27;exécuter. Selon la limite maximale d&#x27;allocation effective du scheduler, la demande est rejetée comme invalide ou reste non allouable ; le blocage à 0 % décrit dans le corrigé du sujet n&#x27;est pas garanti dans toutes les configurations. Il faut examiner les diagnostics de l&#x27;AM et du RM, puis tuer l&#x27;application si elle attend indéfiniment.</p>
+<h3>Exercice 2.8 - Identifiants</h3>
+<p>Pour une application MapReduce : <font name="Consolas">application_X_N</font> correspond à <font name="Consolas">job_X_N</font>. Les deux commandes utilisent le même horodatage et le même numéro séquentiel, avec un préfixe différent. YARN peut également gérer des applications autres que MapReduce, qui n&#x27;apparaissent donc pas dans la liste <font name="Consolas">mapred job</font>.</p>
+<h3>File dev - Configuration et essai</h3>
+<p>La configuration fournie définit <font name="Consolas">root.queues=default,dev</font>, <font name="Consolas">default.capacity=70</font>, <font name="Consolas">dev.capacity=30</font> et <font name="Consolas">dev.maximum-capacity=50</font>. Les capacités enfants totalisent 100 %. <font name="Consolas">dev</font> bénéficie de 30 % et peut monter à 50 % si les ressources sont disponibles. Ce ne sont pas des réservations permanentes de containers.</p>
+<pre>docker compose up -d --force-recreate resourcemanager
+yarn queue -status dev
+hadoop jar &quot;$EX&quot; pi -D mapreduce.job.queuename=dev 8 100000</pre>
+<p>La graphie <font name="Consolas">--force-recreate</font> corrige la coquille à un seul tiret du PDF. Sous installation native, après modification du XML : <font name="Consolas">yarn rmadmin -refreshQueues</font>.</p>
+<h3>WordCount standard fourni par Hadoop</h3>
+<pre>hadoop jar &quot;$EX&quot; wordcount /user/etudiant/tp1/livres /user/etudiant/tp2/wc
+hdfs dfs -cat /user/etudiant/tp2/wc/part-r-* | sort -k2,2nr | head -3</pre>
+<p>La vérification locale du découpage sur les espaces donne <font name="Consolas">the 25072</font>, <font name="Consolas">of 13789</font>, <font name="Consolas">and 13508</font>. Ce WordCount conserve casse et ponctuation, contrairement au programme nettoyé du TP 3.</p>
+<h2>TP 3 - MapReduce</h2>
+<h3>Projet Java et principes</h3>
+<p>Le projet Maven <font name="Consolas">tp3</font> dépend de <font name="Consolas">hadoop-client:3.4.3</font> en portée <font name="Consolas">provided</font>. Les trois classes attendues sont présentes dans les packages du sujet. Le compilateur est explicitement configuré pour Java 8. La compilation s&#x27;effectue avec <font name="Consolas">mvn package</font> ou le script <font name="Consolas">compiler.sh</font> sur une distribution Hadoop disponible. Les dépendances et le binaire Hadoop ne sont pas inclus dans l&#x27;archive.</p>
+<p>WordCount : le Mapper normalise en minuscules, découpe selon les lettres Unicode et émet <font name="Consolas">(mot, 1)</font>. Le Shuffle rassemble les clés identiques. Le Reducer somme. Le Combiner effectue une somme locale, opération associative et commutative. Les options sont <font name="Consolas">wc.longueur.min</font>, <font name="Consolas">wc.mots.vides</font> et <font name="Consolas">wc.combiner</font>.</p>
+<p>Méthode amis 1 : chaque extrémité d&#x27;une arête émet la même paire triée et sa liste d&#x27;amis. Le Reducer fait l&#x27;intersection, uniquement si les deux listes sont présentes. Méthode 2 : chaque personne P émet <font name="Consolas">(groupe de k de ses amis, P)</font> ; le Reducer rassemble les amis communs. <font name="Consolas">amis.min</font> filtre le nombre de personnes reçues. <font name="Consolas">amis.statut=true</font> charge le graphe via le cache distribué.</p>
+<p>Le code nettoie les espaces, ignore les voisins vides et les boucles sur soi, et déduplique les voisins. Le statut exige la réciprocité de chaque amitié. Le graphe original est symétrique ; avec des données asymétriques, la méthode 2 conserve la sémantique du sujet : une personne qui se déclare amie de tous les membres est comptée. Elle ne transforme pas automatiquement le graphe en réseau symétrique.</p>
+<h3>Résultats WordCount réellement recalculés</h3>
+<table><tr><th>Mot</th><th>Occurrences</th></tr><tr><td>the</td><td>26 940</td></tr><tr><td>and</td><td>15 283</td></tr><tr><td>of</td><td>14 119</td></tr><tr><td>to</td><td>12 672</td></tr><tr><td>a</td><td>11 141</td></tr><tr><td>in</td><td>8 382</td></tr><tr><td>i</td><td>7 531</td></tr><tr><td>it</td><td>7 048</td></tr><tr><td>that</td><td>6 525</td></tr><tr><td>was</td><td>5 630</td></tr></table>
+<p>Total : <b>511 244 occurrences</b>, <b>23 892 mots distincts</b>. La somme du nombre de clés distinctes par livre vaut <b>39 051</b>. Elle correspond au volume combiné de référence, lorsque chaque fichier est combiné en une agrégation complète ; les compteurs Hadoop effectifs peuvent varier avec les spills et les splits.</p>
+<p>Avec longueur minimale 3 et la liste de mots vides fournie : <b>283 390 occurrences ignorées</b>, donc <b>227 854 conservées</b>. Le top 5 est <font name="Consolas">whale 1228</font>, <font name="Consolas">emma 865</font>, <font name="Consolas">every 716</font>, <font name="Consolas">most 687</font>, <font name="Consolas">though 669</font>. Tous les résultats complets sont joints en TSV, triés par clé.</p>
+<h3>Exercice 3.1 - Avec et sans Combiner</h3>
+<pre>hadoop jar /opt/jobs/tp3.jar ma.bigdata.tp3.wordcount.WordCountLivres /user/etudiant/tp1/livres /user/etudiant/tp3/wc
+hadoop jar /opt/jobs/tp3.jar ma.bigdata.tp3.wordcount.WordCountLivres -D wc.combiner=false /user/etudiant/tp1/livres /user/etudiant/tp3/wc_sans_combiner</pre>
+<p>Les résultats finaux doivent être identiques. Sans Combiner, les 511 244 paires Map sont transmises ; la référence avec Combiner est 39 051 paires, soit <b>92,36 % de paires en moins</b>, un rapport de 13,09. Le PDF annonce environ 4,7 Mo contre 0,55 Mo de <font name="Consolas">Reduce shuffle bytes</font> : ce sont des valeurs de référence du sujet, non mesurées ici. Le rapport d&#x27;octets diffère du rapport des paires à cause du format des enregistrements. La durée dépend du démarrage des tâches, des disques et du réseau ; un gain n&#x27;est pas garanti pour un si petit corpus. Comparer les logs et vérifier l&#x27;identité des fichiers de sortie avant de conclure.</p>
+<h3>Exercice 3.2 - Nombre de tâches</h3>
+<p>Le <font name="Consolas">TextInputFormat</font> standard ne crée pas un split qui chevauche deux fichiers. Avec cinq petits fichiers inférieurs à la taille d&#x27;un split, il crée cinq splits : <b>5 Map</b>. Pour les 18 livres Gutenberg également petits : <b>18 Map</b>. Cela suppose le format et les tailles de split du TP ; un autre InputFormat, des fichiers plus grands ou une configuration différente peuvent modifier le nombre de tâches.</p>
+<h3>Exercice 3.3 - Paires émises</h3>
+<p>Les degrés du petit graphe sont <font name="Consolas">(3, 4, 4, 4, 3)</font>. Une personne de degré d émet <font name="Consolas">C(d,k)</font> groupes.</p>
+<table><tr><th>k</th><th>Calcul</th><th>GROUPES_EMIS attendu</th><th>Groupes distincts calculés</th></tr><tr><td>2</td><td>3 + 6 + 6 + 6 + 3</td><td>24</td><td>10</td></tr><tr><td>3</td><td>1 + 4 + 4 + 4 + 1</td><td>14</td><td>10</td></tr><tr><td>4</td><td>0 + 1 + 1 + 1 + 0</td><td>3</td><td>3</td></tr></table>
+<p>Le programme local confirme ces nombres en énumérant les combinaisons. Le compteur Hadoop <font name="Consolas">Amis/GROUPES_EMIS</font> doit être relevé après exécution des JAR pour disposer d&#x27;une preuve MapReduce.</p>
+<h3>Petit graphe - Résultats de la méthode 1</h3>
+<pre>Amina,Bilal       [Chaima, Driss]
+Amina,Chaima      [Bilal, Driss]
+Amina,Driss       [Bilal, Chaima]
+Bilal,Chaima      [Amina, Driss, Elias]
+Bilal,Driss       [Amina, Chaima, Elias]
+Bilal,Elias       [Chaima, Driss]
+Chaima,Driss      [Amina, Bilal, Elias]
+Chaima,Elias      [Bilal, Driss]
+Driss,Elias       [Bilal, Chaima]</pre>
+<p>La méthode 1 produit neuf arêtes. Amina et Elias n&#x27;apparaissent pas, car ils ne sont pas amis directs.</p>
+<h3>Petit graphe - Méthode 2, k=2</h3>
+<p>Elle retrouve les neuf résultats précédents, et ajoute <font name="Consolas">Amina,Elias → [Bilal, Chaima, Driss]</font>, avec le statut <font name="Consolas">PAS tous amis</font>. Les neuf autres paires ont le statut <font name="Consolas">amis entre eux</font>. Le fichier <font name="Consolas">amis_k2.tsv</font> contient les dix lignes complètes.</p>
+<h3>Petit graphe - Méthode 2, k=3</h3>
+<pre>Amina,Bilal,Chaima  1 [Driss]          amis entre eux
+Amina,Bilal,Driss   1 [Chaima]         amis entre eux
+Amina,Bilal,Elias   2 [Chaima, Driss]  PAS tous amis
+Amina,Chaima,Driss  1 [Bilal]          amis entre eux
+Amina,Chaima,Elias  2 [Bilal, Driss]   PAS tous amis
+Amina,Driss,Elias   2 [Bilal, Chaima]  PAS tous amis
+Bilal,Chaima,Driss  2 [Amina, Elias]   amis entre eux
+Bilal,Chaima,Elias  1 [Driss]          amis entre eux
+Bilal,Driss,Elias   1 [Chaima]         amis entre eux
+Chaima,Driss,Elias  1 [Bilal]          amis entre eux</pre>
+<h3>Petit graphe - Méthode 2, k=4</h3>
+<pre>Amina,Bilal,Chaima,Elias 1 [Driss]  PAS tous amis
+Amina,Bilal,Driss,Elias  1 [Chaima] PAS tous amis
+Amina,Chaima,Driss,Elias 1 [Bilal]  PAS tous amis</pre>
+<p>Les deux autres groupes de quatre n&#x27;ont aucun ami commun et ne sont pas émis. La méthode 2 ne matérialise pas les groupes à intersection vide, même en l&#x27;absence de filtre supplémentaire.</p>
+<h3>Exercice 3.4 - Amitié à sens unique</h3>
+<p>Le fichier <font name="Consolas">amis_asymetrique.txt</font> ajoute <font name="Consolas">Farid:Amina,Bilal</font>, sans réciprocité. Méthode 1 : <font name="Consolas">Amina,Bilal → [Chaima, Driss]</font>, inchangé, et deux arêtes à sens unique (Amina-Farid et Bilal-Farid) sont ignorées ; le compteur attendu est 2. Méthode 2, k=2 : <font name="Consolas">Amina,Bilal → [Chaima, Driss, Farid]</font>, car Farid se déclare ami des deux. Le fichier de résultat asymétrique recalculé est joint.</p>
+<h3>Exercice 3.5 - Plus grand groupe sur 1 000 personnes</h3>
+<pre>hadoop jar /opt/jobs/tp3.jar ma.bigdata.tp3.amis.AmisCommunsK -D amis.k=3 -D amis.min=3 -D amis.statut=true /user/etudiant/tp3/amis_1000.txt /user/etudiant/tp3/grand_k3
+hdfs dfs -cat /user/etudiant/tp3/grand_k3/part-r-* | sort -k2,2nr | head</pre>
+<p>Le calcul indépendant trouve <b>Driss00723,Meryem00747,Nabil00712</b>, avec <b>8 amis communs</b>, et le statut <b>PAS tous amis</b>. Le résultat complet permet de retrouver les huit noms dans la liste associée. Le maximum pour k=3 est unique dans ce jeu de données.</p>
+<h3>Passage à l&#x27;échelle réellement recalculé</h3>
+<table><tr><th>k</th><th>Groupes émis</th><th>Groupes distincts</th><th>Avec au moins 3 amis communs</th></tr><tr><td>2</td><td>239 145</td><td>159 525</td><td>17 705</td></tr><tr><td>3</td><td>1 704 421</td><td>1 591 428</td><td>19 284</td></tr><tr><td>4</td><td>8 974 079</td><td>8 869 719</td><td>6 163</td></tr></table>
+<p>Ces valeurs correspondent exactement au sujet. Les durées du script Python sont enregistrées dans <font name="Consolas">synthese.json</font> ; elles ne sont pas comparables aux durées MapReduce du PDF. Pour d=22 : <font name="Consolas">C(22,2)=231</font>, <font name="Consolas">C(22,3)=1540</font>, <font name="Consolas">C(22,4)=7315</font>. Le filtre <font name="Consolas">amis.min</font> agit après l&#x27;émission : il réduit la sortie mais n&#x27;évite pas l&#x27;explosion du Shuffle. Le fichier de 10 000 personnes est conservé comme bonus fourni ; son traitement n&#x27;est pas requis par les exercices et n&#x27;a pas été lancé.</p>
+<h2>Reproduction et fichiers livrés</h2>
+<p>1. Lire <font name="Consolas">LISEZMOI.md</font> et la présente limite d&#x27;exécution. 2. Démarrer le cluster Docker ou installer Hadoop 3.4.3 dans la variante WSL. 3. Compiler les trois classes Java, puis placer <font name="Consolas">tp3.jar</font> dans <font name="Consolas">jobs</font>. 4. Exécuter <font name="Consolas">scripts/tp_cluster.sh</font> sur un espace HDFS de TP neuf. Le script n&#x27;est pas idempotent : plusieurs sorties MapReduce doivent être nouvelles. 5. Pour les manipulations interactives de suivi/arrêt à 30 %, utiliser deux terminaux et les commandes du TP 2 ; elles ne sont pas automatisées dans le script principal. 6. Vérifier la persistance <font name="Consolas">stop/start</font> séparément ; l&#x27;essai destructif <font name="Consolas">down/up</font> est expliqué mais n&#x27;est pas lancé automatiquement. 7. Comparer les résultats Hadoop avec les TSV de <font name="Consolas">resultats/verification_locale</font> et recueillir les captures NameNode/YARN sur le cluster opérationnel.</p>
+<p>Les fichiers de résultat local sont des données réellement calculées, pas des sorties portant artificiellement <font name="Consolas">_SUCCESS</font> ou des identifiants YARN. Les scripts conservent les logs réels quand ils sont exécutés. Le manifeste SHA-256 permet de vérifier l&#x27;intégrité des fichiers de l&#x27;archive.</p>
+<h2>Références</h2>
+<p>Sujet original fourni : H. BADIR AI, Hadoop - Travaux pratiques TP 0 à TP 3, édition 2026, 38 pages. Données : corpus Gutenberg et réseaux synthétiques fournis avec le TP.</p>
+<p>Documentation officielle : https://hadoop.apache.org/docs/r3.4.3/ ; guide du Capacity Scheduler : https://hadoop.apache.org/docs/r3.4.2/hadoop-yarn/hadoop-yarn-site/CapacityScheduler.html ; versions Apache Hadoop : https://hadoop.apache.org/release/index.html . Les descriptions de quotas, splits, ressources et limites doivent être lues avec la configuration effective du cluster.</p></body></html>

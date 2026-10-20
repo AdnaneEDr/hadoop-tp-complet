@@ -1,0 +1,62 @@
+=====================================================================
+ HADOOP - TRAVAUX PRATIQUES TP-0 a TP-3 : JEUX DE DONNEES
+ Auteur : H. BADIR AI - Big Data, Ecosysteme Hadoop - Edition 2026
+=====================================================================
+
+1. OU PLACER CE DOSSIER ?
+-------------------------
+ - Docker (option B du TP-0) : decompressez l'archive DANS le dossier
+   hadoop-docker/, a cote de docker-compose.yml. Le dossier
+   hadoop-docker/donnees est alors visible dans le cluster sous /opt/donnees.
+ - Windows natif (option A) : decompressez dans C:\donnees et remplacez
+   /opt/donnees par C:\donnees dans les commandes du livret.
+
+2. QUEL FICHIER POUR QUEL TP ?
+------------------------------
+ TP-0  bonjour.txt                 premier fichier ecrit dans HDFS (§0.3)
+ TP-1  livres/ (5 livres)          pas a pas 1.2 et exercices 1.2 a 1.9
+       livres/bible-kjv.txt        decoupage en blocs de 1 Mo (etape 3, ex. 1.4)
+ TP-2  (rien de nouveau)           le WordCount fourni par Hadoop lit tp1/livres
+ TP-3  livres/ (5 livres)          cas 1 : compter les mots
+       gutenberg/ (18 livres)      exercice 3.2 (nombre de taches Map)
+       amis.txt                    cas 2 : amis communs (5 personnes)
+       amis_asymetrique.txt        exercice 3.4 (amitie a sens unique, Farid)
+       amis_1000.txt               passage a l'echelle et exercice 3.5
+       amis_10000.txt              bonus : meme reseau, 10 fois plus grand
+
+3. CONTENU
+----------
+ livres/carroll-alice.txt         144 395 octets   Alice au pays des merveilles
+ livres/shakespeare-hamlet.txt    162 881 octets   Hamlet
+ livres/melville-moby_dick.txt  1 242 990 octets   Moby Dick
+ livres/austen-emma.txt           887 071 octets   Emma
+ livres/chesterton-brown.txt      406 629 octets   Father Brown
+ livres/bible-kjv.txt           4 332 554 octets   Bible (King James)
+ gutenberg/                     18 livres, 11,6 Mo (les 6 ci-dessus + 12 autres)
+ amis.txt                       5 personnes, 9 amities (Amina et Elias ne sont pas amis)
+ amis_asymetrique.txt           amis.txt + la ligne "Farid:Amina,Bilal"
+ amis_1000.txt / amis_10000.txt reseaux synthetiques, environ 22 amis par personne
+ Format des fichiers d'amis : personne:ami1,ami2,...   (UTF-8, fins de ligne Unix)
+
+4. CHARGEMENT RAPIDE DANS HDFS (rattrapage)
+-------------------------------------------
+ Le livret fait charger les fichiers pas a pas. Pour tout recharger d'un coup :
+   Docker  : docker compose exec namenode bash /opt/donnees/charger_hdfs.sh
+   Windows : double-clic sur charger_hdfs.cmd (cluster demarre)
+ Verifier que les fichiers ne sont pas abimes : bash verifier.sh
+
+5. RESULTATS DE CONTROLE (identiques a ceux du livret)
+------------------------------------------------------
+ TP-1  5 livres : 55 654 lignes, 2 843 966 octets (2.7 M ; 5.4 M avec r=2)
+       bible-kjv.txt en blocs de 1 Mo : 5 blocs, dernier bloc = 138 250 octets
+ TP-2  WordCount fourni par Hadoop : the 25072, of 13789, and 13508
+ TP-3  Cas 1 : 511 244 mots, 23 892 mots distincts ; the 26940, and 15283, of 14119
+             Combiner : 511 244 -> 39 051 paires
+       Cas 2 : k=2 -> 10 groupes ; k=3 -> 10 ; k=4 -> 3
+             amis_1000 (min=3) : 17 705 / 19 284 / 6 163 groupes pour k = 2 / 3 / 4
+
+6. SOURCES ET LICENCES
+----------------------
+ Livres : textes du domaine public du projet Gutenberg (selection du corpus
+ "gutenberg" de NLTK). Reseaux d'amis : donnees synthetiques ; les noms sont
+ fictifs.

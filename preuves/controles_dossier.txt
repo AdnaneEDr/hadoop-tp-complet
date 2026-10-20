@@ -1,0 +1,11 @@
+CONTROLES DU DOSSIER
+- 28 exercices numerotes presents dans le compte rendu : OK
+- Integrite binaire de tous les fichiers du ZIP de donnees original : OK
+- WordCount et amis communs recalcules avec assertions : OK
+- Syntaxe des scripts Bash (bash -n) : OK
+- Syntaxe des scripts Python (py_compile) : OK
+- Configuration docker compose config --quiet : OK
+- PDF 15 pages rendu et inspecte visuellement : OK
+- 4 captures reelles du navigateur : OK
+- Compilation Java contre Hadoop : NON VALIDEE (dependances indisponibles)
+- Execution HDFS/YARN : NON REALISEE (moteur Docker indisponible, telechargements interrompus)

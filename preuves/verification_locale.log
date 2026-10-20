@@ -1,0 +1,207 @@
+graphe 2 {'emis': 239145, 'distincts': 159525, 'retenus': 17705, 'duree_secondes': 0.17, 'maximum': [('Meryem00747,Nabil00712', 12, 'PAS tous amis')]}
+graphe 3 {'emis': 1704421, 'distincts': 1591428, 'retenus': 19284, 'duree_secondes': 1.1, 'maximum': [('Driss00723,Meryem00747,Nabil00712', 8, 'PAS tous amis')]}
+graphe 4 {'emis': 8974079, 'distincts': 8869719, 'retenus': 6163, 'duree_secondes': 12.089, 'maximum': [('Amina00816,Ghita00822,Houda00847,Reda00848', 5, 'PAS tous amis'), ('Amine00334,Ayoub00314,Malak00333,Omar00302', 5, 'PAS tous amis'), ('Amine00766,Omar00782,Walid00762,Youssef00790', 5, 'PAS tous amis'), ('Anas00744,Ismail00716,Omar00734,Youssef00742', 5, 'PAS tous amis'), ('Anas00744,Malak00717,Nadia00701,Sara00745', 5, 'PAS tous amis'), ('Asmae00659,Ayoub00650,Hassan00660,Yasmine00690', 5, 'PAS tous amis'), ('Aya00741,Driss00723,Meryem00747,Nabil00712', 5, 'PAS tous amis'), ('Ayoub00794,Ilham00753,Nadia00797,Sara00793', 5, 'PAS tous amis'), ('Chaima00530,Ismail00524,Loubna00539,Omar00542', 5, 'PAS tous amis'), ('Chaima00770,Ghita00774,Hiba00791,Houda00751', 5, 'PAS tous amis'), ('Elias00820,Houda00847,Sara00841,Wiam00815', 5, 'PAS tous amis'), ('Ghita00822,Nadia00845,Omar00830,Walid00810', 5, 'PAS tous amis'), ('Jalil00537,Meryem00507,Yasmine00546,Zineb00523', 5, 'PAS tous amis'), ('Nadia00845,Omar00830,Samira00809,Walid00810', 5, 'PAS tous amis')]}
+{
+  "octets": 2843966,
+  "lignes": 55654,
+  "mots": 511244,
+  "mots_distincts": 23892,
+  "paires_apres_combinaison_par_fichier": 39051,
+  "top10": [
+    [
+      "the",
+      26940
+    ],
+    [
+      "and",
+      15283
+    ],
+    [
+      "of",
+      14119
+    ],
+    [
+      "to",
+      12672
+    ],
+    [
+      "a",
+      11141
+    ],
+    [
+      "in",
+      8382
+    ],
+    [
+      "i",
+      7531
+    ],
+    [
+      "it",
+      7048
+    ],
+    [
+      "that",
+      6525
+    ],
+    [
+      "was",
+      5630
+    ]
+  ],
+  "top5_filtre": [
+    [
+      "whale",
+      1228
+    ],
+    [
+      "emma",
+      865
+    ],
+    [
+      "every",
+      716
+    ],
+    [
+      "most",
+      687
+    ],
+    [
+      "though",
+      669
+    ]
+  ],
+  "ignores": 283390,
+  "top3_standard": [
+    [
+      "the",
+      25072
+    ],
+    [
+      "of",
+      13789
+    ],
+    [
+      "and",
+      13508
+    ]
+  ],
+  "petit_k2": {
+    "emis": 24,
+    "groupes": 10
+  },
+  "petit_k3": {
+    "emis": 14,
+    "groupes": 10
+  },
+  "petit_k4": {
+    "emis": 3,
+    "groupes": 3
+  },
+  "asymetrie_m1_arretes_ignorees": 2,
+  "graphe_1000_symetrique": true,
+  "grand_k2": {
+    "emis": 239145,
+    "distincts": 159525,
+    "retenus": 17705,
+    "duree_secondes": 0.17,
+    "maximum": [
+      [
+        "Meryem00747,Nabil00712",
+        12,
+        "PAS tous amis"
+      ]
+    ]
+  },
+  "grand_k3": {
+    "emis": 1704421,
+    "distincts": 1591428,
+    "retenus": 19284,
+    "duree_secondes": 1.1,
+    "maximum": [
+      [
+        "Driss00723,Meryem00747,Nabil00712",
+        8,
+        "PAS tous amis"
+      ]
+    ]
+  },
+  "grand_k4": {
+    "emis": 8974079,
+    "distincts": 8869719,
+    "retenus": 6163,
+    "duree_secondes": 12.089,
+    "maximum": [
+      [
+        "Amina00816,Ghita00822,Houda00847,Reda00848",
+        5,
+        "PAS tous amis"
+      ],
+      [
+        "Amine00334,Ayoub00314,Malak00333,Omar00302",
+        5,
+        "PAS tous amis"
+      ],
+      [
+        "Amine00766,Omar00782,Walid00762,Youssef00790",
+        5,
+        "PAS tous amis"
+      ],
+      [
+        "Anas00744,Ismail00716,Omar00734,Youssef00742",
+        5,
+        "PAS tous amis"
+      ],
+      [
+        "Anas00744,Malak00717,Nadia00701,Sara00745",
+        5,
+        "PAS tous amis"
+      ],
+      [
+        "Asmae00659,Ayoub00650,Hassan00660,Yasmine00690",
+        5,
+        "PAS tous amis"
+      ],
+      [
+        "Aya00741,Driss00723,Meryem00747,Nabil00712",
+        5,
+        "PAS tous amis"
+      ],
+      [
+        "Ayoub00794,Ilham00753,Nadia00797,Sara00793",
+        5,
+        "PAS tous amis"
+      ],
+      [
+        "Chaima00530,Ismail00524,Loubna00539,Omar00542",
+        5,
+        "PAS tous amis"
+      ],
+      [
+        "Chaima00770,Ghita00774,Hiba00791,Houda00751",
+        5,
+        "PAS tous amis"
+      ],
+      [
+        "Elias00820,Houda00847,Sara00841,Wiam00815",
+        5,
+        "PAS tous amis"
+      ],
+      [
+        "Ghita00822,Nadia00845,Omar00830,Walid00810",
+        5,
+        "PAS tous amis"
+      ],
+      [
+        "Jalil00537,Meryem00507,Yasmine00546,Zineb00523",
+        5,
+        "PAS tous amis"
+      ],
+      [
+        "Nadia00845,Omar00830,Samira00809,Walid00810",
+        5,
+        "PAS tous amis"
+      ]
+    ]
+  }
+}

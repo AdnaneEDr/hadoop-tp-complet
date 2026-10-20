@@ -1,0 +1,6 @@
+Amina:Bilal,Chaima,Driss
+Bilal:Amina,Chaima,Driss,Elias
+Chaima:Amina,Bilal,Driss,Elias
+Driss:Amina,Bilal,Chaima,Elias
+Elias:Bilal,Chaima,Driss
+Farid:Amina,Bilal

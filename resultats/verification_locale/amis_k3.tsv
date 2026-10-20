@@ -1,0 +1,10 @@
+Amina,Bilal,Chaima	1	[Driss]	amis entre eux
+Amina,Bilal,Driss	1	[Chaima]	amis entre eux
+Amina,Bilal,Elias	2	[Chaima, Driss]	PAS tous amis
+Amina,Chaima,Driss	1	[Bilal]	amis entre eux
+Amina,Chaima,Elias	2	[Bilal, Driss]	PAS tous amis
+Amina,Driss,Elias	2	[Bilal, Chaima]	PAS tous amis
+Bilal,Chaima,Driss	2	[Amina, Elias]	amis entre eux
+Bilal,Chaima,Elias	1	[Driss]	amis entre eux
+Bilal,Driss,Elias	1	[Chaima]	amis entre eux
+Chaima,Driss,Elias	1	[Bilal]	amis entre eux

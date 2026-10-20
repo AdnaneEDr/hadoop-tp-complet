@@ -1,0 +1,4 @@
+Ces images sont des captures reelles du navigateur affichant des pages de verification locale.
+Les donnees affichees proviennent de scripts/verifier_local.py reellement execute.
+Elles ne sont pas des captures de HDFS, YARN ou de jobs MapReduce distribues.
+Voir le compte rendu et le LISEZMOI principal pour les captures cluster restant a produire.
